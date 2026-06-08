@@ -1,8 +1,8 @@
 from bs4 import BeautifulSoup
-from .data_structures import RiderStageResult
+from .data_structures import RiderStageResult, StageProfile
 import re
 
-def parse_stage_results(soup: BeautifulSoup, race: str, year: int, stage: int) -> list[RiderStageResult]:
+def parse_stage_results(soup: BeautifulSoup, race: str, year: int, stage_number: int) -> list[RiderStageResult]:
     """Parses the BeautifulSoup object of a stage results page and extracts structured data for each rider's result."""
 
     results = [] # List to hold parsed results
@@ -61,22 +61,37 @@ def parse_stage_results(soup: BeautifulSoup, race: str, year: int, stage: int) -
         gap_text = cells[2].get_text(strip=True) if len(cells) > 2 else ""
         gap = gap_text if gap_text and gap_text != "0" else None
 
-        results.append(RiderStageResult(race, year, stage, "", 0.0, rider, team, time, gap, rank, breakaway, breakaway_distance))
+        results.append(RiderStageResult(race, year, stage_number, "", 0.0, rider, team, time, gap, rank, breakaway, breakaway_distance))
 
     return results
 
 
-def parse_stage_profile(soup: BeautifulSoup) -> tuple[str, float]:
+def parse_stage_profile(soup: BeautifulSoup, race: str, year: int, stage_number: int) -> StageProfile:
     """Parses the stage profile information (type and distance) from the BeautifulSoup object."""
-    profile_div = soup.select_one("div.stage-profile")
-    if not profile_div:
-        return "", 0.0
+    data = {}
 
-    # Extract stage type (e.g. "Mountain", "Flat", "ITT") - often in a <span> or as text
-    stage_type = profile_div.get_text(strip=True)
+    for li in soup.find_all("li"):
+        title = li.find("div", class_="title")
+        value = li.find("div", class_="value")
+        if title and value:
+            key = title.get_text(strip=True).rstrip(":")
+            val = value.get_text(" ", strip=True)
+            data[key] = val
+    
+    match = re.search(r'(-?\d+)\s*km', data.get("Distance"))
+    if match:
+        distance_km = int(match.group(1))
 
-    # Extract distance in km - look for patterns like "153 km" in the text
-    distance_match = re.search(r"(\d+)\s*km", stage_type)
-    distance_km = float(distance_match.group(1)) if distance_match else 0.0
+    match = re.search(r'(-?\d+(?:\.\d+)?)\s*km/h', data.get("Avg. speed winner"))
+    if match:
+        winner_speed_kmh = float(match.group(1))
 
-    return stage_type, distance_km
+    match = re.search(r'(-?\d+(?:\.\d+)?)\s*%', data.get("Gradient final km"))
+    if match:
+        grad_final_km = float(match.group(1))
+
+    match = re.search(r'(-?\d+)\s*°C', data.get("Avg. temperature"))
+    if match:
+        temperature_c = int(match.group(1))
+
+    return StageProfile(race, year, stage_number, data.get("Date"), data.get("Start time"), winner_speed_kmh, data.get("Classification"), data.get("Race category"), distance_km, grad_final_km, data.get("ProfileScore"), data.get("Vertical meters"), data.get("Departure"), data.get("Arrival"), data.get("Won how"), temperature_c)

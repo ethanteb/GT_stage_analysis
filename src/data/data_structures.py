@@ -12,7 +12,8 @@ class RiderStageResult:
         time: str,
         gap: str | None,
         rank: int, 
-        breakaway: bool = False
+        breakaway: bool = False,
+        breakaway_distance: int = 0
     ):
         self.race               = race
         self.year               = year
@@ -56,27 +57,27 @@ class RiderStageResult:
 class StageProfile:
     """Represents the profile of a stage, including type and distance."""
     def __init__(
-            self,
-            race: str,
-            year: int,
-            stage_number: int, 
-            date: str, 
-            start_time: str, 
-            avg_speed_winner_kmh: float, 
-            classification: str, 
-            race_category: str, 
-            distance_km: float, 
-            gradient_final_km: float, 
-            profile_score: int, 
-            vertical_metres: int,
-            departure_location: str,
-            arrival_location: str,
-            won_how: str,
-            avg_temperature_c: float,
+        self,
+        race: str,
+        year: int,
+        stage_number: int, 
+        date: str, 
+        start_time: str, 
+        avg_speed_winner_kmh: float, 
+        classification: str, 
+        race_category: str, 
+        distance_km: float, 
+        gradient_final_km: float, 
+        profile_score: int, 
+        vertical_metres: int,
+        departure_location: str,
+        arrival_location: str,
+        won_how: str,
+        avg_temperature_c: float,
     ):
-        self.race = race,
-        self.year = year,
-        self.stage_number = stage_number,
+        self.race = race
+        self.year = year
+        self.stage_number = stage_number
         self.date = date
         self.start_time = start_time
         self.avg_speed_winner_kmh = avg_speed_winner_kmh
@@ -93,11 +94,13 @@ class StageProfile:
 
     def __str__(self) -> str:
         """Useful for printing stage profile in a readable format."""
-        return_string = f"[{self.race.upper()} {self.year} | Stage {self.stage_number}] "
-        return_string += f"/n Date: {self.date} | Start Time: {self.start_time} | Distance: {self.distance_km}km | Avg. speed winner: {self.avg_speed_winner_kmh}km/h"
-        return_string += f"/n Classification: {self.classification} | Race category: {self.race_category} | Gradient final km: {self.gradient_final_km}% | Profile score: {self.profile_score} | Vertical metres: {self.vertical_metres}m"
-        return_string += f"/n Departure: {self.departure_location} | Arrival: {self.arrival_location} | Won how: {self.won_how} | Avg. temperature: {self.avg_temperature_c}°C"
-        return (return_string)
+        return (
+            f"{self.race.upper()} {self.year} | Stage {self.stage_number} | "
+            f"Date: {self.date} | Start Time: {self.start_time} | Classification: {self.classification} | Race category: {self.race_category}\n"
+            f"Distance: {self.distance_km}km | Avg. speed winner: {self.avg_speed_winner_kmh}km/h | Gradient final km: {self.gradient_final_km}% | "
+            f"Profile score: {self.profile_score} | Vertical climb: {self.vertical_metres}m\nDeparture: {self.departure_location} | Arrival: {self.arrival_location} | "
+            f"Won how: {self.won_how} | Avg. temperature: {self.avg_temperature_c}°C"
+        )
     
     def to_dict(self) -> dict:
         """Convert to a dictionary, useful for CSV/JSON export."""
