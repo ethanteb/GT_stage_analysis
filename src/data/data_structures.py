@@ -12,8 +12,7 @@ class RiderStageResult:
         time: str,
         gap: str | None,
         rank: int, 
-        breakaway: bool = False, 
-        breakaway_distance: float = 0.0
+        breakaway: bool = False
     ):
         self.race               = race
         self.year               = year
@@ -30,12 +29,11 @@ class RiderStageResult:
     def __str__(self) -> str:
         """Useful for printing results in a readable format."""
         gap_str = self.gap if self.gap else "winner"
-        return_string = f"[{self.race.upper()} {self.year} | Stage {self.stage_number}] "
-        return_string += f"P{self.rank} - {self.rider_name} ({self.team}) "
-        return_string += f"| {self.time} | GC Gap: {gap_str}"
-        if self.breakaway:
-            return_string += f" | Distance in break: {self.breakaway_distance}km"
-        return (return_string)
+        return (
+            f"[{self.race.upper()} {self.year} | Stage {self.stage_number}] "
+            f"P{self.rank} - {self.rider_name} ({self.team}) "
+            f"| {self.time} | Gap: {gap_str} | Breakaway: {self.breakaway}"
+        )
 
     def to_dict(self) -> dict:
         """Convert to a dictionary, useful for CSV/JSON export."""

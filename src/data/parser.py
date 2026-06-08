@@ -1,6 +1,5 @@
 from bs4 import BeautifulSoup
 from .data_structures import RiderStageResult
-import re
 
 def parse_stage_results(soup: BeautifulSoup, race: str, year: int, stage: int) -> list[RiderStageResult]:
     """Parses the BeautifulSoup object of a stage results page and extracts structured data for each rider's result."""
@@ -33,18 +32,6 @@ def parse_stage_results(soup: BeautifulSoup, race: str, year: int, stage: int) -
         else:
             rider = ""
 
-        shield = ridername_td.select_one("div.svg_shield") if ridername_td else None
-
-        if shield and shield.get("title"):
-            breakaway = True
-            breakaway_description = shield["title"]  # e.g. "153 kilometre in a group in front of the peloton"
-            # Extract just the distance in km
-            match = re.search(r"(\d+)\s*kilometre", breakaway_description)
-            breakaway_distance = int(match.group(1)) if match else None
-        else:
-            breakaway = False
-            breakaway_distance = None
-
         # Team name: <a> inside td.cu600 (skip mobile duplicate inside ridername)
         team_td = row.select_one("td.cu600")
         team = team_td.select_one("a").get_text(strip=True) if team_td and team_td.select_one("a") else ""
@@ -61,6 +48,6 @@ def parse_stage_results(soup: BeautifulSoup, race: str, year: int, stage: int) -
         gap_text = cells[2].get_text(strip=True) if len(cells) > 2 else ""
         gap = gap_text if gap_text and gap_text != "0" else None
 
-        results.append(RiderStageResult(race, year, stage, "", 0.0, rider, team, time, gap, rank, breakaway, breakaway_distance))
+        results.append(RiderStageResult(race, year, stage, "", 0.0, rider, team, time, gap, rank))
 
     return results
