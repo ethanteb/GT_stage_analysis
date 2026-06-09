@@ -18,10 +18,14 @@ def test_parse_stage_profile(url):
     print(stage_profile)
 
 if __name__ == "__main__":
-    #url = "https://www.procyclingstats.com/race/giro-d-italia/2026/stage-15"
+    test_url = "https://www.procyclingstats.com/race/giro-d-italia/2026/stage-15"
+    test_url_2 = "https://www.procyclingstats.com/race/vuelta-a-espana/1985"
     base_url = "https://www.procyclingstats.com/race/"
-    url = url_builder(base_url, "giro", 2026, 21)
+    #url = url_builder(base_url, "giro", 2026, 21)
 
     #test_scrape_gt(url)
     #test_parse_stage_results(url)
-    test_parse_stage_profile(url)
+    #test_parse_stage_profile(url)
+    url_list = url_builder(base_url, "giro", 2026)
+    for stage_url in url_list:
+        print(stage_url)

@@ -122,3 +122,15 @@ class StageProfile:
             "won_how":              self.won_how,
             "avg_temperature_c":    self.avg_temperature_c
         }
+    
+class Stage_URL:
+    """Represents the URL for a specific stage of a Grand Tour."""
+    def __init__(self, race: str, year: int, stage_number: int, url: str):
+        self.race           = race
+        self.year           = year
+        self.stage_number   = stage_number
+        self.url            = url
+
+    def __str__(self) -> str:
+        """Useful for printing stage URL in a readable format."""
+        return f"{self.race.upper()} {self.year} | Stage {self.stage_number} | URL: {self.url}"

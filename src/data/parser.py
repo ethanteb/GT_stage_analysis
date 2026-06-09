@@ -95,3 +95,8 @@ def parse_stage_profile(soup: BeautifulSoup, race: str, year: int, stage_number:
         temperature_c = int(match.group(1))
 
     return StageProfile(race, year, stage_number, data.get("Date"), data.get("Start time"), winner_speed_kmh, data.get("Classification"), data.get("Race category"), distance_km, grad_final_km, data.get("ProfileScore"), data.get("Vertical meters"), data.get("Departure"), data.get("Arrival"), data.get("Won how"), temperature_c)
+
+
+def parse_no_stages_in_year(url: str) -> int:
+    """Returns the number of stages for a given year, based on known historical data. Defaults to 21 stages for modern years."""
+    soup = fetch_page(url)
