@@ -1,6 +1,7 @@
+import re
 from bs4 import BeautifulSoup
 from .data_structures import RiderStageResult, StageProfile
-import re
+
 
 def parse_stage_results(soup: BeautifulSoup, race: str, year: int, stage_number: int) -> list[RiderStageResult]:
     """Parses the BeautifulSoup object of a stage results page and extracts structured data for each rider's result."""
@@ -61,7 +62,7 @@ def parse_stage_results(soup: BeautifulSoup, race: str, year: int, stage_number:
         gap_text = cells[2].get_text(strip=True) if len(cells) > 2 else ""
         gap = gap_text if gap_text and gap_text != "0" else None
 
-        results.append(RiderStageResult(race, year, stage_number, "", 0.0, rider, team, time, gap, rank, breakaway, breakaway_distance))
+        results.append(RiderStageResult(race, year, stage_number, rider, team, time, gap, rank, breakaway, breakaway_distance))
 
     return results
 
@@ -95,8 +96,3 @@ def parse_stage_profile(soup: BeautifulSoup, race: str, year: int, stage_number:
         temperature_c = int(match.group(1))
 
     return StageProfile(race, year, stage_number, data.get("Date"), data.get("Start time"), winner_speed_kmh, data.get("Classification"), data.get("Race category"), distance_km, grad_final_km, data.get("ProfileScore"), data.get("Vertical meters"), data.get("Departure"), data.get("Arrival"), data.get("Won how"), temperature_c)
-
-
-def parse_no_stages_in_year(url: str) -> int:
-    """Returns the number of stages for a given year, based on known historical data. Defaults to 21 stages for modern years."""
-    soup = fetch_page(url)
