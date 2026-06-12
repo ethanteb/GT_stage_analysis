@@ -1,10 +1,14 @@
 import re
 from bs4 import BeautifulSoup
-from .data_structures import RiderStageResult, StageProfile
+from .data_structures import RiderStageResult, StageProfile, StageURL
 
 
-def parse_stage_results(soup: BeautifulSoup, race: str, year: int, stage_number: int) -> list[RiderStageResult]:
-    """Parses the BeautifulSoup object of a stage results page and extracts structured data for each rider's result."""
+def parse_stage_results(stage_url: StageURL, soup: BeautifulSoup) -> list[RiderStageResult]:
+    """First obtains then parses a BeautifulSoup object of a stage results page and extracts structured data for each rider's result, also returning the beautiful soup object."""
+
+    race = stage_url.race
+    year = stage_url.year
+    stage_number = stage_url.stage_number
 
     results = [] # List to hold parsed results
     table = soup.select_one("div#resultsCont table.results tbody") # Locates the results table
@@ -62,14 +66,14 @@ def parse_stage_results(soup: BeautifulSoup, race: str, year: int, stage_number:
         gap_text = cells[2].get_text(strip=True) if len(cells) > 2 else ""
         gap = gap_text if gap_text and gap_text != "0" else None
 
-        results.append(RiderStageResult(race, year, stage_number, rider, team, time, gap, rank, breakaway, breakaway_distance))
-
+        rider_stage_result = RiderStageResult(race, year, stage_number, rider, team, time, gap, rank, breakaway, breakaway_distance)
+        results.append(rider_stage_result)
     return results
 
 
-def parse_stage_profile(soup: BeautifulSoup, race: str, year: int, stage_number: int) -> StageProfile:
-    """Parses the stage profile information (type and distance) from the BeautifulSoup object."""
-    data = {}
+def parse_stage_profile(stage_url: StageURL, soup: BeautifulSoup) -> StageProfile:
+    """Parses the stage profile information (type and distance) from the BeautifulSoup object and the StageURL object."""
+    data = {} # Dictionary to hold parsed profile data before converting to StageProfile dataclass
 
     for li in soup.find_all("li"):
         title = li.find("div", class_="title")
@@ -95,4 +99,23 @@ def parse_stage_profile(soup: BeautifulSoup, race: str, year: int, stage_number:
     if match:
         temperature_c = int(match.group(1))
 
-    return StageProfile(race, year, stage_number, data.get("Date"), data.get("Start time"), winner_speed_kmh, data.get("Classification"), data.get("Race category"), distance_km, grad_final_km, data.get("ProfileScore"), data.get("Vertical meters"), data.get("Departure"), data.get("Arrival"), data.get("Won how"), temperature_c)
+    stage_profile = StageProfile(
+        stage_url.race,
+        stage_url.year, 
+        stage_url.stage_number,
+        data.get("Date"), 
+        data.get("Start time"), 
+        winner_speed_kmh, 
+        data.get("Classification"), 
+        data.get("Race category"), 
+        distance_km,
+        grad_final_km, 
+        data.get("ProfileScore"), 
+        data.get("Vertical meters"), 
+        data.get("Departure"), 
+        data.get("Arrival"), 
+        data.get("Race ranking"),
+        data.get("Won how"), 
+        temperature_c
+    )
+    return stage_profile

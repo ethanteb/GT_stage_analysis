@@ -3,9 +3,4 @@ from tests.data.test_parser import test_parse_stage_results, test_parse_stage_pr
 
 
 if __name__ == "__main__":
-    #test_fetch_page()
-    #test_no_stages_in_year()
-    #test_url_builder()
-    #test_url_iterator()
-    #test_parse_stage_results()
-    test_parse_stage_profile()
+    print("Hello, world!")

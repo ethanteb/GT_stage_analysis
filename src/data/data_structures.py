@@ -29,9 +29,9 @@ class RiderStageResult:
         gap_str = self.gap if self.gap else "winner"
         return_string = f"[{self.race.upper()} {self.year} | Stage {self.stage_number}] "
         return_string += f"P{self.rank} - {self.rider_name} ({self.team}) "
-        return_string += f"| {self.time} | Gap: {gap_str} | "
+        return_string += f"| {self.time} | Gap: {gap_str}"
         if self.breakaway:
-            return_string += f"Breakaway: {self.breakaway_distance}km"
+            return_string += f" | Breakaway: {self.breakaway_distance}km"
         return (return_string)
 
     def to_dict(self) -> dict:
@@ -68,8 +68,9 @@ class StageProfile:
         vertical_metres: int,
         departure_location: str,
         arrival_location: str,
+        race_ranking: int,
         won_how: str,
-        avg_temperature_c: float,
+        avg_temperature_c: float
     ):
         self.race = race
         self.year = year
@@ -85,6 +86,7 @@ class StageProfile:
         self.vertical_metres = vertical_metres
         self.departure_location = departure_location
         self.arrival_location = arrival_location
+        self.race_ranking = race_ranking
         self.won_how = won_how
         self.avg_temperature_c = avg_temperature_c
 
@@ -95,7 +97,7 @@ class StageProfile:
             f"Date: {self.date} | Start Time: {self.start_time} | Classification: {self.classification} | Race category: {self.race_category}\n"
             f"Distance: {self.distance_km}km | Avg. speed winner: {self.avg_speed_winner_kmh}km/h | Gradient final km: {self.gradient_final_km}% | "
             f"Profile score: {self.profile_score} | Vertical climb: {self.vertical_metres}m\nDeparture: {self.departure_location} | Arrival: {self.arrival_location} | "
-            f"Won how: {self.won_how} | Avg. temperature: {self.avg_temperature_c}°C"
+            f"PCS Race Ranking: {self.race_ranking} | Won how: {self.won_how} | Avg. temperature: {self.avg_temperature_c}°C"
         )
     
     def to_dict(self) -> dict:
@@ -115,11 +117,12 @@ class StageProfile:
             "vertical_metres":      self.vertical_metres,
             "departure_location":   self.departure_location,
             "arrival_location":     self.arrival_location,
+            "race_ranking":         self.race_ranking,
             "won_how":              self.won_how,
             "avg_temperature_c":    self.avg_temperature_c
         }
     
-class Stage_URL:
+class StageURL:
     """Represents the URL for a specific stage of a Grand Tour."""
     def __init__(self, race: str, year: int, stage_number: int, url: str):
         self.race           = race

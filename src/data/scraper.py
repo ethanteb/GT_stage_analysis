@@ -1,6 +1,6 @@
 import requests, time, re
 from bs4 import BeautifulSoup
-from .data_structures import Stage_URL
+from .data_structures import StageURL
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; research-bot/1.0)"}
 
@@ -29,9 +29,9 @@ def no_stages_in_year(url: str) -> int:
     return num_stages
 
 
-def url_builder(base_url: str, race: str, year: int) -> list[Stage_URL]:
-    """Constructs the procyclingstats URL for a given race, year and returns as dict with keys like 
-    'giro_2026_15' (Giro 2026, Stage 15) and values as string of the URL."""
+def url_builder(base_url: str, race: str, year: int) -> list[StageURL]:
+    """Constructs the procyclingstats URL for a given race, year and returns as list of
+    StageURL dataclass instances for each stage."""
     if race.lower() == "giro":
         full_race_name = "giro-d-italia"
     elif race.lower() == "tour":
@@ -41,20 +41,19 @@ def url_builder(base_url: str, race: str, year: int) -> list[Stage_URL]:
     else:
         raise ValueError(f"Unsupported race name: {race}")
     stage_urls = []
-    no_stages = no_stages_in_year(f"{base_url}/{full_race_name}/{year}")
+    no_stages = no_stages_in_year(f"{base_url}/{full_race_name}/{year}") #TODO:  adjust for the list rather than the dict
     for stage in range(1, no_stages + 1):
         try:
             url = f"{base_url}/{full_race_name}/{year}/stage-{stage}"
-            stage_url = Stage_URL(race, year, stage, url)
+            stage_url = StageURL(race, year, stage, url)
             stage_urls.append(stage_url)
         except ValueError:
             pass
     return stage_urls
     
 
-def url_iterator(base_url: str, start_year: int, end_year: int) -> list[Stage_URL]:
-    """Generates URLs for all stages of all 3 GTs for the specified year range, returns as dict with keys like 
-    'giro_2026_15' (Giro 2026, Stage 15) and values as strings of the corresponding URL."""
+def url_iterator(base_url: str, start_year: int, end_year: int) -> list[StageURL]:
+    """Generates URLs for all stages of all 3 GTs for the specified year range, returns as list of StageURL instances."""
     if start_year > end_year:
         raise ValueError("Start year must be less than or equal to end year.")
     if start_year < 1910 or end_year > 2025:
