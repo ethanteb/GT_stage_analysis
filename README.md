@@ -1,6 +1,5 @@
 # GT_stage_analysis
-Grand Tour stage analysis of trends over time
+This project aims to scrape, parse and then analyse the change in tactics, particularly focusing on the success rate of breakaways in the three cycling Grand Tours, the Giro d'Italia, Tour de France and Vuelta d'Espana. The website that is being used as the source of the data is procyclingstats.com.
 
-Currently working on scraping and parsing cycling grand tour stage data, starting with stage 15 on the 2026 Giro d'Italia.
-
-The aim of the project is to use the data scraped from procyclingstats.com to analyse trends in race tactics, specifically with breakaway success and whether this has varied over time and possibly even whether the profile of a stage has an impact on the breakawy success rate.
+## Scraping and Parsing
+The testsing_notebook is useful for demonstrating the scraping and parsing functions which currently are able to automate the extraction of the results of individual stages of a Grand Tour, and also information about the stage profile. Stage 15 of the 2026 Giro d'Italia is used as an example to extract information from throughout the testing notebook, as on this stage a rider from the breakaway won, so it can be observed the extra information that is obtained by the parsing functions when a rider is in a breakaway.
