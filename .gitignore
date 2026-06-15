@@ -1,6 +1,6 @@
 .myenv
 .pytest_cache
-.project_structure.txt
+project_structure.txt
 .tests/__pycache__
 __pycache__
 .DS_Store
