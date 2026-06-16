@@ -1,101 +1,79 @@
-import requests, time, re
+#-------------------------------------------------------------------------------------------------------------
+# Imports
+#-------------------------------------------------------------------------------------------------------------
+
+import requests, time, re, json
 from bs4 import BeautifulSoup
+from dataclasses import dataclass
 
-'''3 classes defining the data structures that are used to store the page urls, the stage profile and the individual ride stage results.'''
-class RiderStageResult:
-    """Represents one rider's result for one stage of a Grand Tour."""
-    def __init__(
-        self,
-        race: str,
-        year: int,
-        stage_number: int,
-        rider_name: str,
-        team: str,
-        time: str,
-        gap: str | None,
-        rank: int, 
-        breakaway: bool = False,
-        breakaway_distance: int = 0
-    ):
-        self.race               = race
-        self.year               = year
-        self.stage_number       = stage_number
-        self.rider_name         = rider_name
-        self.team               = team
-        self.time               = time
-        self.gap                = gap
-        self.rank               = rank
-        self.breakaway          = breakaway
-        self.breakaway_distance = breakaway_distance
+#-------------------------------------------------------------------------------------------------------------
+# Constants
+#-------------------------------------------------------------------------------------------------------------
 
-    def __str__(self) -> str:
-        """Useful for printing results in a readable format."""
-        gap_str = self.gap if self.gap else "winner"
-        return_string = f"[{self.race.upper()} {self.year} | Stage {self.stage_number}] "
-        return_string += f"P{self.rank} - {self.rider_name} ({self.team}) "
-        return_string += f"| {self.time} | Gap: {gap_str}"
-        if self.breakaway:
-            return_string += f" | Breakaway: {self.breakaway_distance}km"
-        return (return_string)
+HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; research-bot/1.0)"}
+GRAND_TOURS: dict[str, str] = {'giro': 'giro-d-italia', 'tour': 'tour-de-france', 'vuelta': 'vuelta-a-espana'}
+BASE_URL = "https://www.procyclingstats.com/race"
 
-    def to_dict(self) -> dict:
-        """Convert to a dictionary, useful for CSV/JSON export."""
-        return {
-            "race":         self.race,
-            "year":         self.year,
-            "stage_number": self.stage_number,
-            "rider_name":   self.rider_name,
-            "team":         self.team,
-            "time":         self.time,
-            "gap":          self.gap,
-            "rank":         self.rank,
-            "breakaway":     self.breakaway,
-            "breakaway_distance": self.breakaway_distance
-        }
+#-------------------------------------------------------------------------------------------------------------
+# Functions
+#-------------------------------------------------------------------------------------------------------------
+
+def fetch_page(url: str, delay: float = 1.0) -> BeautifulSoup:
+    """Fetches page content from url and returns a BeautifulSoup object.
+    Includes delay (in seconds) to be polite to the server."""
+    time.sleep(delay)
+    try:
+        response = requests.get(url, headers=HEADERS, timeout=10)
+        response.raise_for_status()
+        return BeautifulSoup(response.text, "html.parser")
+    except requests.RequestException as exc:
+        print(f"Error fetching {url}: {exc}")
+        return BeautifulSoup(
+            "<html><body><h1>Error fetching page</h1></body></html>",
+            "html.parser",
+        )
     
-    
+def _parse_float(text: str, pattern: str) -> float:
+    """Return the first captured float from text matching pattern, or None."""
+    if text is None:
+        return None
+    m = re.search(pattern, text)
+    return float(m.group(1)) if m else None
+ 
+ 
+def _parse_int(text: str, pattern: str) -> int:
+    """Return the first captured int from text matching pattern, or None."""
+    if text is None:
+        return None
+    m = re.search(pattern, text)
+    return int(m.group(1)) if m else None
+
+#-------------------------------------------------------------------------------------------------------------
+# Data Classes
+#-------------------------------------------------------------------------------------------------------------
+
+@dataclass
 class StageProfile:
-    """Represents the profile of a stage, including type and distance."""
-    def __init__(
-        self,
-        race: str,
-        year: int,
-        stage_number: int, 
-        date: str, 
-        start_time: str, 
-        avg_speed_winner_kmh: float, 
-        classification: str, 
-        race_category: str, 
-        distance_km: float, 
-        gradient_final_km: float, 
-        profile_score: int, 
-        vertical_metres: int,
-        departure_location: str,
-        arrival_location: str,
-        race_ranking: int,
-        won_how: str,
-        avg_temperature_c: float
-    ):
-        self.race = race
-        self.year = year
-        self.stage_number = stage_number
-        self.date = date
-        self.start_time = start_time
-        self.avg_speed_winner_kmh = avg_speed_winner_kmh
-        self.classification = classification
-        self.race_category = race_category
-        self.distance_km = distance_km
-        self.gradient_final_km = gradient_final_km
-        self.profile_score = profile_score
-        self.vertical_metres = vertical_metres
-        self.departure_location = departure_location
-        self.arrival_location = arrival_location
-        self.race_ranking = race_ranking
-        self.won_how = won_how
-        self.avg_temperature_c = avg_temperature_c
+    """Stage metadata scraped from the profile section of a PCS stage page."""
+    race: str
+    year: int
+    stage_number: int
+    date: str
+    start_time: str
+    avg_speed_winner_kmh: float
+    classification: str
+    race_category: str
+    distance_km: float
+    gradient_final_km: float
+    profile_score: int
+    vertical_metres: int
+    departure_location: str
+    arrival_location: str
+    race_ranking: int
+    won_how: str
+    avg_temperature_c: float
 
     def __str__(self) -> str:
-        """Useful for printing stage profile in a readable format."""
         return (
             f"{self.race.upper()} {self.year} | Stage {self.stage_number} | "
             f"Date: {self.date} | Start Time: {self.start_time} | Classification: {self.classification} | Race category: {self.race_category}\n"
@@ -105,7 +83,6 @@ class StageProfile:
         )
     
     def to_dict(self) -> dict:
-        """Convert to a dictionary, useful for CSV/JSON export."""
         return {
             "race":                 self.race,
             "year":                 self.year,
@@ -125,197 +102,298 @@ class StageProfile:
             "won_how":              self.won_how,
             "avg_temperature_c":    self.avg_temperature_c
         }
-    
-class StageURL:
-    """Represents the URL for a specific stage of a Grand Tour."""
+
+@dataclass
+class RiderStageResult:
+    """Data structure class containing an individual rider's result in a single stage of a specific grand tour"""
+    race: str
+    year: int
+    stage_number: int
+    rider_name: str
+    team: str
+    time: str
+    gap: str | None
+    rank: int 
+    breakaway_distance: int | None
+
+    def __str__(self) -> str:
+        gap_str = self.gap if self.gap else "winner"
+        s = f"[{self.race.upper()} {self.year} | Stage {self.stage_number}] "
+        s += f"P{self.rank} - {self.rider_name} ({self.team}) "
+        s += f"| {self.time} | Gap: {gap_str}"
+        if self.breakaway_distance:
+            s += f" | Breakaway: {self.breakaway_distance}km"
+        return s
+
+    def to_dict(self) -> dict:
+        return {
+            "race":         self.race,
+            "year":         self.year,
+            "stage_number": self.stage_number,
+            "rider_name":   self.rider_name,
+            "team":         self.team,
+            "time":         self.time,
+            "gap":          self.gap,
+            "rank":         self.rank,
+            "breakaway_distance": self.breakaway_distance
+        }
+
+#-------------------------------------------------------------------------------------------------------------
+# GTStage: Corresponds to a single stage, parses own data
+#-------------------------------------------------------------------------------------------------------------
+
+
+class GTStage:
+    """Represents a single stage of a Grand Tour.
+    Call fetch_page first, then parse_stage_profile and then parse_stage_results` as needed."""
     def __init__(self, race: str, year: int, stage_number: int, url: str):
         self.race           = race.upper()
         self.year           = year
         self.stage_number   = stage_number
         self.url            = url
+        self.page_content   : BeautifulSoup | None = None
+        self.stage_profile  : StageProfile | None = None
+        self.stage_results  : list[RiderStageResult]
 
     def __str__(self) -> str:
-        """Useful for printing stage URL in a readable format."""
-        return f"{self.race} {self.year} | Stage {self.stage_number} | URL: {self.url}"
-
-
-'''Functions that are used for scraping and parsing the data from procycling stats'''
-HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; research-bot/1.0)"}
-
-def fetch_page(url: str, delay: float = 1.0) -> BeautifulSoup:
-    """Fetches the content of a web page and returns a BeautifulSoup object, with a delay to avoid overwhelming the server."""
-    try:
-        time.sleep(delay)  # Avoid overwhelming the server
-        response = requests.get(url, headers=HEADERS, timeout=10)
-        response.raise_for_status()  # Raise an error for bad status codes
-        return BeautifulSoup(response.text, 'html.parser')
-    except requests.RequestException as e:
-        print(f"Error fetching {url}: {e}")
-        return BeautifulSoup("<html><body><h1>Error fetching page</h1></body></html>", 'html.parser')
+        s = f"{self.race} {self.year} | Stage {self.stage_number} | URL: {self.url}"
+        s += " | Content: TRUE" if self.page_content else ""
+        s += " | Profile: TRUE" if self.stage_profile else ""
+        s += " | Results: TRUE" if self.stage_results else ""
+        return s
     
-
-def no_stages_in_year(url: str) -> int:
-    """Returns the number of stages for a given year, based on known historical data. Defaults to 21 stages for modern years."""
-    soup = fetch_page(url)
-    title_line = soup.find("div", class_="title-line2")
-    text = title_line.get_text(" ", strip=False)
-    match = re.search(r'(\d+)\s+Stages', text)
-    if match:
-        num_stages = int(match.group(1))
-    else:
-        raise ValueError(f"Could not determine number of stages from page: {url}")
-    return num_stages
-
-
-def url_builder(base_url: str, race: str, year: int) -> list[StageURL]:
-    """Constructs the procyclingstats URL for a given race, year and returns as list of
-    StageURL dataclass instances for each stage."""
-    if race.lower() == "giro":
-        full_race_name = "giro-d-italia"
-    elif race.lower() == "tour":
-        full_race_name = "tour-de-france"
-    elif race.lower() == "vuelta":
-        full_race_name = "vuelta-a-espana"
-    else:
-        raise ValueError(f"Unsupported race name: {race}")
-    stage_urls = []
-    no_stages = no_stages_in_year(f"{base_url}/{full_race_name}/{year}")
-    for stage in range(1, no_stages + 1):
-        try:
-            url = f"{base_url}/{full_race_name}/{year}/stage-{stage}"
-            stage_url = StageURL(race, year, stage, url)
-            stage_urls.append(stage_url)
-        except ValueError:
-            pass
-    return stage_urls
+    def to_dict(self):
+        return {
+            "race": self.race,
+            "year": self.year,
+            "stage_number": self.stage_number,
+            "url": self.url,
+            # Not saving BeautifulSoup objects
+            "stage_profile": (self.stage_profile.to_dict() if self.stage_profile is not None else None),
+            "stage_results": [result.to_dict()for result in self.stage_results]
+        }
     
+    #--------------------------------------------------------------------------------------------------------
+    # Fetching
+    #--------------------------------------------------------------------------------------------------------
+    
+    def fetch_page(self, delay: float = 1.0):
+        """Download the stage page and store it as page_content."""
+        self.page_content = fetch_page(self.url, delay=delay)
+ 
+    def _require_page(self) -> BeautifulSoup:
+        """Return page_content, raising an error if it hasn't been fetched."""
+        if self.page_content is None:
+            raise RuntimeError(f"Page not fetched yet for {self}. Call fetch_page() first.")
+        return self.page_content
+    
+    #--------------------------------------------------------------------------------------------------------
+    # Parsing Stage Profile
+    #--------------------------------------------------------------------------------------------------------
+    
+    def parse_stage_profile(self) -> None:
+        """Parse the profile metadata and populate stage_profile."""
+        soup = self._require_page() # check page content has been retrieved
+ 
+        # Collect every title/value pair from <li> elements
+        data: dict[str, str] = {}
+        for li in soup.find_all("li"):
+            title = li.find("div", class_="title")
+            value = li.find("div", class_="value")
+            if title and value:
+                key = title.get_text(strip=True).rstrip(":")
+                data[key] = value.get_text(" ", strip=True)
+ 
+        self.stage_profile = StageProfile(
+            race                 = self.race,
+            year                 = self.year,
+            stage_number         = self.stage_number,
+            date                 = data.get("Date"),
+            start_time           = data.get("Start time"),
+            avg_speed_winner_kmh = _parse_float(data.get("Avg. speed winner"), r"(-?\d+(?:\.\d+)?)\s*km/h"),
+            classification       = data.get("Classification"),
+            race_category        = data.get("Race category"),
+            distance_km          = _parse_int(data.get("Distance"), r"(-?\d+)\s*km"),
+            gradient_final_km    = _parse_float(data.get("Gradient final km"), r"(-?\d+(?:\.\d+)?)\s*%"),
+            profile_score        = data.get("ProfileScore"),
+            vertical_metres      = data.get("Vertical meters"),
+            departure_location   = data.get("Departure"),
+            arrival_location     = data.get("Arrival"),
+            race_ranking         = data.get("Race ranking"),
+            won_how              = data.get("Won how"),
+            avg_temperature_c    = _parse_int(data.get("Avg. temperature"), r"(-?\d+)\s*°C"),
+        )
 
-def url_iterator(base_url: str, start_year: int, end_year: int) -> list[StageURL]:
-    """Generates URLs for all stages of all 3 GTs for the specified year range, returns as list of StageURL instances."""
-    if start_year > end_year:
-        raise ValueError("Start year must be less than or equal to end year.")
-    if start_year < 1910 or end_year > 2025:
-        raise ValueError("Year range must be between 1910 and 2025.")
-    urls = []
-    for year in range(start_year, end_year + 1):
-        for race in ["giro", "tour", "vuelta"]:
-            year_list = url_builder(base_url, race, year)
-            urls.extend(year_list)
-    return urls
+    #--------------------------------------------------------------------------------------------------------
+    # Parsing Stage Results
+    #--------------------------------------------------------------------------------------------------------
+    
+    def parse_stage_results(self) -> None:
+        """Parse the results table and populate stage_results."""
+        soup  = self._require_page() # check page content has been retrieved
+        table = soup.select_one("div#resultsCont table.results tbody")
+        if table is None:
+            print(f"Results table not found for {self}")
+            return
+ 
+        self.stage_results = []
+        for row in table.select("tr"):
+            result = self._parse_result_row(row)
+            if result is not None:
+                self.stage_results.append(result)
 
-def parse_stage_results(stage_url: StageURL, soup: BeautifulSoup) -> list[RiderStageResult]:
-    """First obtains then parses a BeautifulSoup object of a stage results page and extracts structured data for each rider's result, also returning the beautiful soup object."""
-
-    race = stage_url.race
-    year = stage_url.year
-    stage_number = stage_url.stage_number
-
-    results = [] # List to hold parsed results
-    table = soup.select_one("div#resultsCont table.results tbody") # Locates the results table
-
-    for row in table.select("tr"):
+    def _parse_result_row(self, row) -> RiderStageResult:
+        """Parse a single <tr> into a RiderStageResult object."""
         cells = row.select("td")
         if not cells:
-            continue
-
+            return None
+ 
         rank_text = cells[0].get_text(strip=True)
         if not rank_text.isdigit():
-            continue
+            return None
         rank = int(rank_text)
-
-        # Rider name: first <a> inside .ridername, combining both spans/text nodes
+ 
+        # Rider name
         ridername_td = row.select_one("td.ridername")
-        rider_link = ridername_td.select_one("a") if ridername_td else None
-        if rider_link:
-            # Concatenate all text parts: spans + tail text (e.g. "Dversnes Lavik" + "Fredrik")
-            parts = [s.get_text(strip=True) for s in rider_link.find_all("span", class_="uppercase")]
-            tail = rider_link.find("span", class_="uppercase").next_sibling
+        rider = self._parse_rider_name(ridername_td)
+ 
+        # Breakaway shield
+        breakaway_distance = self._parse_breakaway(ridername_td)
+ 
+        # Team
+        team_td = row.select_one("td.cu600")
+        team = (
+            team_td.select_one("a").get_text(strip=True)
+            if team_td and team_td.select_one("a")
+            else ""
+        )
+ 
+        # Finish time
+        time_td = row.select_one("td.time")
+        finish_time = ""
+        if time_td:
+            hidden = time_td.select_one("span.hide")
+            font   = time_td.select_one("font")
+            finish_time = (
+                hidden.get_text(strip=True) if hidden
+                else font.get_text(strip=True) if font
+                else ""
+            )
+ 
+        # Gap to winner (column index 2)
+        gap_text = cells[2].get_text(strip=True) if len(cells) > 2 else ""
+        gap = gap_text if gap_text and gap_text != "0" else None
+ 
+        return RiderStageResult(
+            race               = self.race,
+            year               = self.year,
+            stage_number       = self.stage_number,
+            rider_name         = rider,
+            team               = team,
+            time               = finish_time,
+            gap                = gap,
+            rank               = rank,
+            breakaway_distance = breakaway_distance,
+        )
+
+    @staticmethod
+    def _parse_rider_name(ridername_td) -> str:
+        if ridername_td is None:
+            return ""
+        rider_link = ridername_td.select_one("a")
+        if rider_link is None:
+            return ""
+        parts = [s.get_text(strip=True) for s in rider_link.find_all("span", class_="uppercase")]
+        first_uppercase = rider_link.find("span", class_="uppercase")
+        if first_uppercase:
+            tail = first_uppercase.next_sibling
             if tail:
                 tail_text = tail.strip() if isinstance(tail, str) else tail.get_text(strip=True)
                 if tail_text:
                     parts.append(tail_text)
-            rider = " ".join(parts)
-        else:
-            rider = ""
-
-        shield = ridername_td.select_one("div.svg_shield") if ridername_td else None
-
+        return " ".join(parts)
+ 
+    @staticmethod
+    def _parse_breakaway(ridername_td) -> int:
+        if ridername_td is None:
+            return None
+        shield = ridername_td.select_one("div.svg_shield")
         if shield and shield.get("title"):
-            breakaway = True
-            breakaway_description = shield["title"]  # e.g. "153 kilometre in a group in front of the peloton"
-            # Extract just the distance in km
-            match = re.search(r"(\d+)\s*kilometre", breakaway_description)
-            breakaway_distance = int(match.group(1)) if match else None
-        else:
-            breakaway = False
-            breakaway_distance = None
+            desc = shield["title"]
+            m = re.search(r"(\d+)\s*kilometre", desc)
+            return int(m.group(1)) if m else None
+        return None
+ 
+#-------------------------------------------------------------------------------------------------------------
+# GTResults: controls fetching across years and the three grand tours
+#-------------------------------------------------------------------------------------------------------------
 
-        # Team name: <a> inside td.cu600 (skip mobile duplicate inside ridername)
-        team_td = row.select_one("td.cu600")
-        team = team_td.select_one("a").get_text(strip=True) if team_td and team_td.select_one("a") else ""
+class GTResults:
+    """Builds and stores GTStage objects for a range of years.
+    Usage:
+        results = GTResults(BASE_URL, 2022, 2023)
+        results.build_stage_list()
+        for stage in results.stages:
+            stage.fetch_page()
+            stage.parse_stage_profile()
+            stage.parse_stage_results()
+        results.to_json('data/raw/2022_2023_raw')
+    """
+    def __init__(self, base_url: str, start_year: int, end_year: int):
+        self.base_url                         = base_url
+        self.start_year                       = start_year
+        self.end_year                         = end_year
+        self.list_GT_stages  : list[GTStage]  = []
+        self.num_stages_dict : dict[str, int] = {} # keys of type 'race_short year' e.g. 'GIRO 2026'
 
-        # Time: prefer the <span class="hide"> which has clean text, fall back to <font>
-        time_td = row.select_one("td.time")
-        if time_td:
-            hidden = time_td.select_one("span.hide")
-            time = hidden.get_text(strip=True) if hidden else time_td.select_one("font").get_text(strip=True)
-        else:
-            time = ""
+    #--------------------------------------------------------------------------------------------------------
+    # Stage count methods
+    #--------------------------------------------------------------------------------------------------------
 
-        # Gap: GC timelag column (index 2), e.g. "+2:41:57"; strip for rank 1 (will be empty or "0")
-        gap_text = cells[2].get_text(strip=True) if len(cells) > 2 else ""
-        gap = gap_text if gap_text and gap_text != "0" else None
-
-        rider_stage_result = RiderStageResult(race, year, stage_number, rider, team, time, gap, rank, breakaway, breakaway_distance)
-        results.append(rider_stage_result)
-    return results
-
-
-def parse_stage_profile(stage_url: StageURL, soup: BeautifulSoup) -> StageProfile:
-    """Parses the stage profile information (type and distance) from the BeautifulSoup object and the StageURL object."""
-    data = {} # Dictionary to hold parsed profile data before converting to StageProfile dataclass
-
-    for li in soup.find_all("li"):
-        title = li.find("div", class_="title")
-        value = li.find("div", class_="value")
-        if title and value:
-            key = title.get_text(strip=True).rstrip(":")
-            val = value.get_text(" ", strip=True)
-            data[key] = val
+    @staticmethod
+    def _count_stages(soup: BeautifulSoup, label: str) -> int:
+        """Extract the stage count from a race overview page."""
+        title_line = soup.find("div", class_="title-line2")
+        if title_line:
+            m = re.search(r"(\d+)\s+Stages", title_line.get_text(" ", strip=False))
+            if m:
+                return int(m.group(1))
+        raise ValueError(f"Could not determine stage count for {label}")
+ 
+    def _fetch_stage_count(self, race_short: str, full_name: str, year: int) -> int:
+        """Fetch the race overview page and return the number of stages."""
+        url  = f"{self.base_url}/{full_name}/{year}"
+        soup = fetch_page(url)
+        return self._count_stages(soup, f"{race_short.upper()} {year}")
     
-    match = re.search(r'(-?\d+)\s*km', data.get("Distance"))
-    if match:
-        distance_km = int(match.group(1))
+    #--------------------------------------------------------------------------------------------------------
+    # Overall control methods
+    #--------------------------------------------------------------------------------------------------------
 
-    match = re.search(r'(-?\d+(?:\.\d+)?)\s*km/h', data.get("Avg. speed winner"))
-    if match:
-        winner_speed_kmh = float(match.group(1))
+    def build_stage_list(self):
+        """Populate stages by fetching stage counts for each race/year."""
+        for year in range(self.start_year, self.end_year + 1):
+            for short_name, full_name in GRAND_TOURS.items():
+                key = f"{short_name}{year}"
+                num_stages = self._fetch_stage_count(short_name, full_name, year)
+                self.num_stages_dict[key] = num_stages
+ 
+                for stage_num in range(1, num_stages + 1):
+                    url = f"{self.base_url}/{full_name}/{year}/stage-{stage_num}"
+                    self.list_GT_stages.append(GTStage(short_name, year, stage_num, url))
 
-    match = re.search(r'(-?\d+(?:\.\d+)?)\s*%', data.get("Gradient final km"))
-    if match:
-        grad_final_km = float(match.group(1))
+    def to_dict(self):
+        return {
+            "base_url": self.base_url,
+            "start_year": self.start_year,
+            "end_year": self.end_year,
+            "list_GT_stages": [stage.to_dict() for stage in self.list_GT_stages],
+            "num_stages_dict": self.num_stages_dict,
+        }
 
-    match = re.search(r'(-?\d+)\s*°C', data.get("Avg. temperature"))
-    if match:
-        temperature_c = int(match.group(1))
-
-    stage_profile = StageProfile(
-        stage_url.race,
-        stage_url.year, 
-        stage_url.stage_number,
-        data.get("Date"), 
-        data.get("Start time"), 
-        winner_speed_kmh, 
-        data.get("Classification"), 
-        data.get("Race category"), 
-        distance_km,
-        grad_final_km, 
-        data.get("ProfileScore"), 
-        data.get("Vertical meters"), 
-        data.get("Departure"), 
-        data.get("Arrival"), 
-        data.get("Race ranking"),
-        data.get("Won how"), 
-        temperature_c
-    )
-    return stage_profile
+    def __str__(self):
+        return (f"GTResults(years={self.start_year}-{self.end_year}, stages_loaded={len(self.list_GT_stages)})")
+    
+    def to_json(self, loc):
+        with open(f"{loc}.json", "w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, indent=4)

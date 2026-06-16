@@ -1,11 +1,11 @@
 import pytest
-from gt_stage_analysis.data.data_loading import StageURL, StageProfile, RiderStageResult
-from gt_stage_analysis.data.data_loading import fetch_page, no_stages_in_year, url_builder, url_iterator, parse_stage_results, parse_stage_profile
+from gt_stage_analysis.data.data_loading import GTResults, GTStage, StageProfile, RiderStageResult
 
 #global variables for testing
 base_url = "https://www.procyclingstats.com/race"
 
 def test_no_stages_in_year():
+    test_GT_results = GTResults(base_url, )
     assert no_stages_in_year(base_url + "/vuelta-a-espana/1985") == 19
     assert no_stages_in_year(base_url + "/giro-d-italia/2025") == 21
     assert no_stages_in_year(base_url + "/tour-de-france/2006") == 20

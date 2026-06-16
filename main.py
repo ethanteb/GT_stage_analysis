@@ -1,2 +1,18 @@
+#-------------------------------------------------------------------------------------------------------------
+# Imports
+#-------------------------------------------------------------------------------------------------------------
+
+from gt_stage_analysis.data.data_loading import BASE_URL, GTResults
+
+#-------------------------------------------------------------------------------------------------------------
+# Main workflow
+#-------------------------------------------------------------------------------------------------------------
+
 if __name__ == "__main__":
-    print('Hello, world!')
+    results = GTResults(BASE_URL, 2022, 2022)
+    results.build_stage_list()
+    for stage in results.list_GT_stages:
+        stage.fetch_page()
+        stage.parse_stage_profile()
+        stage.parse_stage_results()
+    results.to_json('data/raw/2022_raw')
