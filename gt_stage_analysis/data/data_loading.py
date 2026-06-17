@@ -102,6 +102,28 @@ class StageProfile:
             "won_how":              self.won_how,
             "avg_temperature_c":    self.avg_temperature_c
         }
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> StageProfile:
+        return cls(
+            race=data["race"],
+            year=data["year"],
+            stage_number=data["stage_number"],
+            date=data["date"],
+            start_time=["start_time"],
+            avg_speed_winner_kmh=["avg_speed_winner_kmh"],
+            classification=["classification"],
+            race_category=["race_category"],
+            distance_km=["distance_km"],
+            gradient_final_km=["gradient_final_km"],
+            profile_score=["profile_score"],
+            vertical_metres=["vertical_metres"],
+            departure_location=["departure_location"],
+            arrival_location=["arrival_location"],
+            race_ranking=["race_ranking"],
+            won_how=["won_how"],
+            avg_temperature_c=["avg_temperature_c"]
+        )
 
 @dataclass
 class RiderStageResult:
@@ -137,6 +159,20 @@ class RiderStageResult:
             "rank":         self.rank,
             "breakaway_distance": self.breakaway_distance
         }
+    
+    @classmethod
+    def from_dict(cls, data: dict) -> RiderStageResult:
+        return cls(
+            race=data["race"],
+            year=data["year"],
+            stage_number=data["stage_number"],
+            rider_name=data["rider_name"],
+            team=data["team"],
+            time=data["time"],
+            gap=data["gap"],
+            rank=data["rank"],
+            breakaway_distance=data["breakaway_distance"]
+        )
 
 #-------------------------------------------------------------------------------------------------------------
 # GTStage: Corresponds to a single stage, parses own data
@@ -172,6 +208,19 @@ class GTStage:
             "stage_profile": (self.stage_profile.to_dict() if self.stage_profile is not None else None),
             "stage_results": [result.to_dict()for result in self.stage_results]
         }
+    
+    @classmethod
+    def from_dict(cls, data):
+        obj = cls(
+            race=data["race"],
+            year=data["year"],
+            stage_number=data["stage_number"],
+            url=data["url"]
+        )
+        if data["stage_profile"] is not None:
+            obj.stage_profile = StageProfile.from_dict(data["stage_profile"])
+        obj.stage_results = [RiderStageResult.from_dict(result_data) for result_data in data["stage_results"]]
+        return obj
     
     #--------------------------------------------------------------------------------------------------------
     # Fetching
@@ -346,6 +395,42 @@ class GTResults:
         self.list_GT_stages  : list[GTStage]  = []
         self.num_stages_dict : dict[str, int] = {} # keys of type 'race_short year' e.g. 'GIRO 2026'
 
+    def to_dict(self):
+        return {
+            "base_url": self.base_url,
+            "start_year": self.start_year,
+            "end_year": self.end_year,
+            "list_GT_stages": [stage.to_dict() for stage in self.list_GT_stages],
+            "num_stages_dict": self.num_stages_dict,
+        }
+    
+    @classmethod
+    def from_dict(cls, data):
+        obj = cls(
+            base_url=data["base_url"],
+            start_year=data["start_year"],
+            end_year=data["end_year"]
+        )
+        obj.num_stages_dict = data["num_stages_dict"]
+        obj.list_GT_stages = [
+            GTStage.from_dict(stage_data)
+            for stage_data in data["list_GT_stages"]
+        ]
+        return obj
+
+    def __str__(self):
+        return (f"GTResults(years={self.start_year}-{self.end_year}, stages_loaded={len(self.list_GT_stages)})")
+    
+    def to_json(self, loc):
+        with open(f"{loc}.json", "w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, indent=4)
+
+    @classmethod
+    def load_json(cls, loc):
+        with open(f"{loc}.json", "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return cls.from_dict(data)
+
     #--------------------------------------------------------------------------------------------------------
     # Stage count methods
     #--------------------------------------------------------------------------------------------------------
@@ -377,23 +462,6 @@ class GTResults:
                 key = f"{short_name}{year}"
                 num_stages = self._fetch_stage_count(short_name, full_name, year)
                 self.num_stages_dict[key] = num_stages
- 
                 for stage_num in range(1, num_stages + 1):
                     url = f"{self.base_url}/{full_name}/{year}/stage-{stage_num}"
                     self.list_GT_stages.append(GTStage(short_name, year, stage_num, url))
-
-    def to_dict(self):
-        return {
-            "base_url": self.base_url,
-            "start_year": self.start_year,
-            "end_year": self.end_year,
-            "list_GT_stages": [stage.to_dict() for stage in self.list_GT_stages],
-            "num_stages_dict": self.num_stages_dict,
-        }
-
-    def __str__(self):
-        return (f"GTResults(years={self.start_year}-{self.end_year}, stages_loaded={len(self.list_GT_stages)})")
-    
-    def to_json(self, loc):
-        with open(f"{loc}.json", "w", encoding="utf-8") as f:
-            json.dump(self.to_dict(), f, indent=4)

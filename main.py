@@ -9,6 +9,10 @@ from gt_stage_analysis.data.data_loading import BASE_URL, GTResults
 #-------------------------------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
+    #---------------------------------------------------------------------------------------------------------
+    # Scraping & saving to .json file -> comment out when not required
+    #---------------------------------------------------------------------------------------------------------
+    '''
     results = GTResults(BASE_URL, 2022, 2022)
     results.build_stage_list()
     for stage in results.list_GT_stages:
@@ -16,3 +20,8 @@ if __name__ == "__main__":
         stage.parse_stage_profile()
         stage.parse_stage_results()
     results.to_json('data/raw/2022_raw')
+    '''
+    #---------------------------------------------------------------------------------------------------------
+    # Loading from .json -> comment out when not required
+    #---------------------------------------------------------------------------------------------------------
+    results = GTResults.load_json('data/raw/2022_raw')
