@@ -25,7 +25,7 @@ def single_year_stage_length(data, year):
         data_key = f"{key}{year}"
         num_stages_dict[key] = data.num_stages_dict[data_key]
     stage_lengths, max_num_stages = extract_length(data, num_stages_dict)
-    plot_stage_lengths(stage_lengths, max_num_stages)
+    plot_stage_lengths(stage_lengths, max_num_stages, year)
 
 def extract_length(data, num_stages_dict) -> tuple[dict[str, list], int]:
     '''
@@ -49,7 +49,8 @@ def extract_length(data, num_stages_dict) -> tuple[dict[str, list], int]:
     max_num_stages = max([len(giro_lengths), len(tour_lengths), len(vuelta_lengths)])
     return {'Giro': giro_lengths, 'Tour': tour_lengths, 'Vuelta': vuelta_lengths}, max_num_stages
 
-def plot_stage_lengths(stage_lengths, max_num_stages):
+def plot_stage_lengths(stage_lengths, max_num_stages, year):
+    #Plotting function
     stages = np.arange(1, max_num_stages + 1)
     fig, ax = plt.subplots(figsize=(13, 5))
 
@@ -71,7 +72,7 @@ def plot_stage_lengths(stage_lengths, max_num_stages):
     ax.tick_params(axis='both', labelsize=9, colors='grey')
     ax.set_xlabel('Stage Number', fontsize=10, labelpad=8, color='black')
     ax.set_ylabel('Stage Length/km', fontsize=10, labelpad=8, color='black')
-    ax.set_title('Grand Tour Stage Lengths 2025', fontsize=11, color='black')
+    ax.set_title(f'Grand Tour Stage Lengths {year}', fontsize=11, color='black')
 
     legend = ax.legend(
         title='Grand Tour',
