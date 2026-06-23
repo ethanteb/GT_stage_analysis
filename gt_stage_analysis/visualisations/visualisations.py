@@ -4,12 +4,12 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+from ..data.data_loading import GRAND_TOURS
 
 #-------------------------------------------------------------------------------------------------------------
 # Constants
 #-------------------------------------------------------------------------------------------------------------
 
-GRAND_TOURS: dict[str, str] = {'giro': 'giro-d-italia', 'tour': 'tour-de-france', 'vuelta': 'vuelta-a-espana'}
 COLOURS: dict[str, str] = {'giro': 'hotpink', 'tour': 'gold', 'vuelta': 'red'}
 
 #-------------------------------------------------------------------------------------------------------------

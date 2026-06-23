@@ -2,8 +2,8 @@
 # Imports
 #-------------------------------------------------------------------------------------------------------------
 
-from gt_stage_analysis.data.data_loading import BASE_URL, GTResults
-from gt_stage_analysis.visualisations.visualisations import single_year_stage_length
+from gt_stage_analysis import BASE_URL, GTResults
+from gt_stage_analysis import single_year_stage_length
 
 #-------------------------------------------------------------------------------------------------------------
 # Main workflow
@@ -33,4 +33,5 @@ if __name__ == "__main__":
     #---------------------------------------------------------------------------------------------------------
 
     single_year_stage_length(results, 2025)
+    
     
