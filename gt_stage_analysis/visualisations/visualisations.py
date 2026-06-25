@@ -89,3 +89,7 @@ def plot_stage_lengths(stage_lengths, max_num_stages, year):
 
     fig.tight_layout()
     plt.show()
+
+#-------------------------------------------------------------------------------------------------------------
+# Functions to show plots of the breakaway success rate over time.
+#-------------------------------------------------------------------------------------------------------------

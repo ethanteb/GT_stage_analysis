@@ -3,8 +3,9 @@
 #-------------------------------------------------------------------------------------------------------------
 
 import requests, time, re, json
+import pandas as pd
 from bs4 import BeautifulSoup
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 
 #-------------------------------------------------------------------------------------------------------------
 # Constants
@@ -25,6 +26,7 @@ def fetch_page(url: str, delay: float = 1.0) -> BeautifulSoup:
     try:
         response = requests.get(url, headers=HEADERS, timeout=10)
         response.raise_for_status()
+        print(f'Fetched: {url}')
         return BeautifulSoup(response.text, "html.parser")
     except requests.RequestException as exc:
         print(f"Error fetching {url}: {exc}")
@@ -430,7 +432,7 @@ class GTResults:
         with open(f"{loc}.json", "r", encoding="utf-8") as f:
             data = json.load(f)
         return cls.from_dict(data)
-
+    
     #--------------------------------------------------------------------------------------------------------
     # Stage count methods
     #--------------------------------------------------------------------------------------------------------
@@ -451,6 +453,27 @@ class GTResults:
         soup = fetch_page(url)
         return self._count_stages(soup, f"{race_short.upper()} {year}")
     
+    #--------------------------------------------------------------------------------------------------------
+    # Breakaway success rate dataframe preparation
+    #--------------------------------------------------------------------------------------------------------
+    
+    def convert_to_breakaway_dataframe(self) -> pd.DataFrame:
+        """Defines & populates dataframe including the first column intended to be a bool success or failure"""
+        columns = ['break_success']
+        df = pd.DataFrame(columns=columns.extend([f.name for f in fields(StageProfile)]))
+        rows = []
+        for GT_stage in self.list_GT_stages:
+            dict = {'break_success': False}
+            try:
+                if GT_stage.stage_results[0].breakaway_distance:
+                    dict = {'break_success': True}
+            except IndexError: #handle situations where the stage has no result list, e.g Vuelta 2025 Stage 11
+                pass
+            dict.update(GT_stage.stage_profile.to_dict())
+            rows.append(dict)
+        df = pd.DataFrame(rows)
+        return df
+
     #--------------------------------------------------------------------------------------------------------
     # Overall control methods
     #--------------------------------------------------------------------------------------------------------
