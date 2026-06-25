@@ -466,11 +466,12 @@ class GTResults:
             dict = {'break_success': False}
             try:
                 if GT_stage.stage_results[0].breakaway_distance:
-                    dict = {'break_success': True}
+                    dict = {'break_success': True} 
             except IndexError: #handle situations where the stage has no result list, e.g Vuelta 2025 Stage 11
                 pass
             dict.update(GT_stage.stage_profile.to_dict())
             rows.append(dict)
+            # print(f"Appended {GT_stage.race}{GT_stage.stage_number}")
         df = pd.DataFrame(rows)
         return df
 

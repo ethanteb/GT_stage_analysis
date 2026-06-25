@@ -3,7 +3,7 @@
 #-------------------------------------------------------------------------------------------------------------
 
 from gt_stage_analysis import BASE_URL, GTResults
-from gt_stage_analysis import single_year_stage_length
+from gt_stage_analysis import single_year_stage_length, breakaway_success_plot
 import pandas as pd
 
 #-------------------------------------------------------------------------------------------------------------
@@ -36,8 +36,8 @@ if __name__ == "__main__":
     single_year_stage_length(data=results, year=2025)
     '''
     #---------------------------------------------------------------------------------------------------------
-    # Extracting breakaway success rate data
+    # Extracting breakaway success rate data into a pandas dataframe, then plotting breakawy success rate
     #---------------------------------------------------------------------------------------------------------
     
     df = results.convert_to_breakaway_dataframe()
-    print(df)
+    breakaway_success_plot(df)

@@ -4,13 +4,15 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from ..data.data_loading import GRAND_TOURS
 
 #-------------------------------------------------------------------------------------------------------------
 # Constants
 #-------------------------------------------------------------------------------------------------------------
 
-COLOURS: dict[str, str] = {'giro': 'hotpink', 'tour': 'gold', 'vuelta': 'red'}
+COLOURS: dict[str, str] = {'giro': 'hotpink', 'tour': 'gold', 'vuelta': 'red', 'average': 'grey'}
+LINESTYLES: dict[str, str] = {'giro': '-', 'tour': '-', 'vuelta': '-', 'average': '--'}
 
 #-------------------------------------------------------------------------------------------------------------
 # Functions to produce a plot showing the length of stages of a single year of all 3 Grand Tours
@@ -68,11 +70,12 @@ def plot_stage_lengths(stage_lengths, max_num_stages, year):
     ax.spines['left'].set_color('lightgrey')
     ax.spines['bottom'].set_color('lightgrey')
 
+    ax.set_title(f'Grand Tour Stage Lengths {year}', fontsize=11, color='black')
+    ax.set_xlabel('Stage Number', fontsize=10, color='black')
+    ax.set_ylabel('Stage Length/km', fontsize=10, color='black')
     ax.set_xticks(stages)
     ax.tick_params(axis='both', labelsize=9, colors='grey')
-    ax.set_xlabel('Stage Number', fontsize=10, labelpad=8, color='black')
-    ax.set_ylabel('Stage Length/km', fontsize=10, labelpad=8, color='black')
-    ax.set_title(f'Grand Tour Stage Lengths {year}', fontsize=11, color='black')
+
 
     legend = ax.legend(
         title='Grand Tour',
@@ -93,3 +96,45 @@ def plot_stage_lengths(stage_lengths, max_num_stages, year):
 #-------------------------------------------------------------------------------------------------------------
 # Functions to show plots of the breakaway success rate over time.
 #-------------------------------------------------------------------------------------------------------------
+
+def breakaway_success_plot(df):
+    breakaway_stats = (df.groupby(['race', 'year'])['break_success'].agg(total_stages='count',successful_breaks='sum').reset_index())
+    breakaway_stats['success_rate_pct'] = (breakaway_stats['successful_breaks'] / breakaway_stats['total_stages'] * 100).round(2)
+    pivot = breakaway_stats.pivot(index='year', columns='race', values='success_rate_pct')
+    pivot['AVERAGE'] = pivot.mean(axis=1)
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    for col in ['GIRO', 'TOUR', 'VUELTA', 'AVERAGE']:
+        if col in pivot.columns:
+            ax.plot(
+                pivot.index,
+                pivot[col],
+                label=col,
+                color=COLOURS[col.lower()],
+                linestyle=LINESTYLES[col.lower()],
+                marker='o',
+                markersize=4,
+            )
+
+    ax.set_title('Breakaway Success Rate by Grand Tour', fontsize=11, color='black')
+    ax.set_xlabel('Year', fontsize=10)
+    ax.set_ylabel('Breakaway Success Rate /%', fontsize=10)
+    ax.set_xticks(pivot.index)
+    ax.grid(True, linestyle='--', color='lightgrey')
+    ax.set_ylim(0, 100)
+
+    legend = ax.legend(
+        title='Legend',
+        title_fontsize=9,
+        fontsize=9,
+        loc='upper left',
+        bbox_to_anchor=(1.01, 1),
+        borderaxespad=0,
+        frameon=True,
+        framealpha=0.9,
+        edgecolor='black',
+    )
+    legend.get_title().set_color('black')
+
+    fig.tight_layout()
+    plt.show()
