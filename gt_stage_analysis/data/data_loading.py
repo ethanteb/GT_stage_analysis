@@ -189,9 +189,9 @@ class GTStage:
         self.year           = year
         self.stage_number   = stage_number
         self.url            = url
-        self.page_content   : BeautifulSoup | None = None
-        self.stage_profile  : StageProfile | None = None
-        self.stage_results  : list[RiderStageResult]
+        self.page_content   : BeautifulSoup | None
+        self.stage_profile  : StageProfile | None
+        self.stage_results  : list[RiderStageResult] | None
 
     def __str__(self) -> str:
         s = f"{self.race} {self.year} | Stage {self.stage_number} | URL: {self.url}"
@@ -395,7 +395,7 @@ class GTResults:
         self.start_year                       = start_year
         self.end_year                         = end_year
         self.list_GT_stages  : list[GTStage]  = []
-        self.num_stages_dict : dict[str, int] = {} # keys of type 'race_short year' e.g. 'GIRO 2026'
+        self.num_stages_dict : dict[str, int] = {}      # keys of type 'race_short year' e.g. 'GIRO 2026'
 
     def to_dict(self):
         return {
@@ -465,11 +465,16 @@ class GTResults:
         for GT_stage in self.list_GT_stages:
             dict = {'break_success': False}
             try:
-                if GT_stage.stage_results[0].breakaway_distance:
+                break_distance = GT_stage.stage_results[0].breakaway_distance
+                '''
+                if not break_distance:
+                    break_distance =  _parse_float(, r'(\d+)\s*km')
+                ''' 
+                if break_distance:
                     dict = {'break_success': True} 
             except IndexError: #handle situations where the stage has no result list, e.g Vuelta 2025 Stage 11
                 pass
-            dict.update(GT_stage.stage_profile.to_dict())
+            dict.update(GT_stage.stage_profile.to_dict()) 
             rows.append(dict)
             # print(f"Appended {GT_stage.race}{GT_stage.stage_number}")
         df = pd.DataFrame(rows)
@@ -481,11 +486,15 @@ class GTResults:
 
     def build_stage_list(self):
         """Populate stages by fetching stage counts for each race/year."""
+        fetch_counts = True
+        if self.num_stages_dict:
+            fetch_counts = False
         for year in range(self.start_year, self.end_year + 1):
             for short_name, full_name in GRAND_TOURS.items():
                 key = f"{short_name}{year}"
-                num_stages = self._fetch_stage_count(short_name, full_name, year)
-                self.num_stages_dict[key] = num_stages
-                for stage_num in range(1, num_stages + 1):
+                if fetch_counts:
+                    num_stages = self._fetch_stage_count(short_name, full_name, year)
+                    self.num_stages_dict[key] = num_stages
+                for stage_num in range(1, self.num_stages_dict[key] + 1):
                     url = f"{self.base_url}/{full_name}/{year}/stage-{stage_num}"
                     self.list_GT_stages.append(GTStage(short_name, year, stage_num, url))
