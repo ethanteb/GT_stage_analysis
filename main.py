@@ -36,7 +36,7 @@ if __name__ == "__main__":
     # Simple stage length plot
     #---------------------------------------------------------------------------------------------------------
     '''
-    single_year_stage_length(data=results, year=2025) # plot stage lengths TODO: be able to select single year
+    single_year_stage_length(data=results, year=2021) # plot stage lengths of specified year from dataset
     '''
     #---------------------------------------------------------------------------------------------------------
     # Extracting breakaway success rate data into a pandas dataframe, then plotting breakawy success rate
@@ -49,12 +49,12 @@ if __name__ == "__main__":
     #---------------------------------------------------------------------------------------------------------
     # Data splitting then building random forest model
     #---------------------------------------------------------------------------------------------------------
-
+    
     forest = RandomForest(df) # initiate class
     forest.train_test_split(test_size=0.2, random_state=42) # split data into training and testing sets
     forest.train_model(n_estimators=100, random_state=42) # train model
     forest.predict() # predict
     forest.eval() # evaluate using accuracy score metric
-
+    
     #random_forest_conf_matrix_plot(forest) # plot confusion matrix #TODO: prettify
-    random_forest_feature_imp_plot(forest) # plot feature importance #TODO: sort descending importance and prettify
+    #random_forest_feature_imp_plot(forest) # plot feature importance #TODO: sort descending importance and prettify

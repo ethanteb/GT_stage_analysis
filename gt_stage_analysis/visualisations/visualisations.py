@@ -21,17 +21,20 @@ LINESTYLES: dict[str, str] = {'giro': '-', 'tour': '-', 'vuelta': '-', 'average'
 #-------------------------------------------------------------------------------------------------------------
 
 def single_year_stage_length(data, year):
-    #Call this function to extract the needed stage length data and the produce the plot
+    '''
+    Extracts the needed stage length data and then produces the plot
+    '''
     if year not in range (data.start_year, data.end_year+1):
         raise ValueError("Selected year must be in the range of the data.")
     num_stages_dict = {}
     for key, value in GRAND_TOURS.items():
         data_key = f"{key}{year}"
         num_stages_dict[key] = data.num_stages_dict[data_key]
-    stage_lengths, max_num_stages = extract_length(data, num_stages_dict)
+    year_data = [item for item in data.list_GT_stages if item.year == year]
+    stage_lengths, max_num_stages = extract_length(year_data, num_stages_dict)
     plot_stage_lengths(stage_lengths, max_num_stages, year)
 
-def extract_length(data, num_stages_dict) -> tuple[dict[str, list], int]:
+def extract_length(year_data, num_stages_dict) -> tuple[dict[str, list], int]:
     '''
     Extracts the stage length data into three arrays that are returned inside a dictionary with the tour name as key, 
     the max_num_stages variable that is also returned is the maximum number of stages in any of the grand tours, to be 
@@ -43,25 +46,27 @@ def extract_length(data, num_stages_dict) -> tuple[dict[str, list], int]:
     vuelta_lengths = []
     for key, value in num_stages_dict.items():
         sum_stages+=value
+
+    if len(year_data) != sum_stages:
+        raise ValueError("Stage count error")
+
     for num in range(0, sum_stages):
-        if data.list_GT_stages[num].race == 'GIRO':
-            giro_lengths.append(data.list_GT_stages[num].stage_profile.distance_km)
-        elif data.list_GT_stages[num].race == 'TOUR':
-            tour_lengths.append(data.list_GT_stages[num].stage_profile.distance_km)
-        elif data.list_GT_stages[num].race == 'VUELTA':
-            vuelta_lengths.append(data.list_GT_stages[num].stage_profile.distance_km)
+        if year_data[num].race == 'GIRO':
+            giro_lengths.append(year_data[num].stage_profile.distance_km)
+        elif year_data[num].race == 'TOUR':
+            tour_lengths.append(year_data[num].stage_profile.distance_km)
+        elif year_data[num].race == 'VUELTA':
+            vuelta_lengths.append(year_data[num].stage_profile.distance_km)
     max_num_stages = max([len(giro_lengths), len(tour_lengths), len(vuelta_lengths)])
     return {'Giro': giro_lengths, 'Tour': tour_lengths, 'Vuelta': vuelta_lengths}, max_num_stages
 
 def plot_stage_lengths(stage_lengths, max_num_stages, year):
-    #Plotting function
-    stages = np.arange(1, max_num_stages + 1)
     fig, ax = plt.subplots(figsize=(13, 5))
-
+        
     for key, value in stage_lengths.items():
+        stages = np.arange(1, len(value) + 1)
         ax.plot(stages, value, color=COLOURS[key.lower()], linewidth=1.4, alpha=0.6, zorder=2)
-        ax.scatter(stages, value, label=key, color=COLOURS[key.lower()], s=40, zorder=3,
-                   edgecolors='white', linewidths=0.5)
+        ax.scatter(stages, value, label=key, color=COLOURS[key.lower()], s=40, zorder=3, edgecolors='white', linewidths=0.5)
 
     ax.yaxis.grid(True, color='lightgrey', linewidth=0.7, zorder=1)
     ax.set_axisbelow(True)
@@ -75,9 +80,9 @@ def plot_stage_lengths(stage_lengths, max_num_stages, year):
     ax.set_title(f'Grand Tour Stage Lengths {year}', fontsize=11, color='black')
     ax.set_xlabel('Stage Number', fontsize=10, color='black')
     ax.set_ylabel('Stage Length/km', fontsize=10, color='black')
-    ax.set_xticks(stages)
+    ax.set_xticks(np.arange(1, max_num_stages + 1))
+    ax.set_xlim(1, max_num_stages)
     ax.tick_params(axis='both', labelsize=9, colors='grey')
-
 
     legend = ax.legend(
         title='Grand Tour',
