@@ -3,9 +3,11 @@
 #-------------------------------------------------------------------------------------------------------------
 
 import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 import pandas as pd
 from ..data.data_loading import GRAND_TOURS
+from ..models.train import RandomForest, FEATURE_NAMES
 
 #-------------------------------------------------------------------------------------------------------------
 # Constants
@@ -137,4 +139,24 @@ def breakaway_success_plot(df):
     legend.get_title().set_color('black')
 
     fig.tight_layout()
+    plt.show()
+
+#-------------------------------------------------------------------------------------------------------------
+# Random Forest Plots
+#-------------------------------------------------------------------------------------------------------------
+
+def random_forest_conf_matrix_plot(forest: RandomForest):
+    plt.figure(figsize=(8, 6))
+    sns.heatmap(forest.conf_matrix, annot=True, fmt='g', cmap='Blues', cbar=False, 
+                xticklabels=[True, False], yticklabels=[True, False])
+
+    plt.title('Confusion Matrix for Random Forest Model')
+    plt.xlabel('Predicted Breakaway Success')
+    plt.ylabel('True Breakaway Success')
+    plt.show()
+
+def random_forest_feature_imp_plot(forest: RandomForest):
+    plt.barh(FEATURE_NAMES, forest.feature_importances)
+    plt.xlabel('Feature Importance')
+    plt.title('Feature Importance in Random Forest Model')
     plt.show()

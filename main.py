@@ -2,8 +2,11 @@
 # Imports
 #-------------------------------------------------------------------------------------------------------------
 
-from gt_stage_analysis import BASE_URL, GTResults
-from gt_stage_analysis import single_year_stage_length, breakaway_success_plot
+from gt_stage_analysis import BASE_URL, GTResults, RandomForest
+from gt_stage_analysis import (
+    single_year_stage_length, breakaway_success_plot, 
+    random_forest_conf_matrix_plot, random_forest_feature_imp_plot
+    )
 import pandas as pd
 
 #-------------------------------------------------------------------------------------------------------------
@@ -27,18 +30,31 @@ if __name__ == "__main__":
     # Loading from .json -> comment out when not required
     #---------------------------------------------------------------------------------------------------------
     
-    results = GTResults.load_json(loc='data/raw/2020_2025_raw')
+    results = GTResults.load_json(loc='data/raw/2020_2025_raw') # load data in from .json file
     
     #---------------------------------------------------------------------------------------------------------
-    # Simple stage length plot -> setup to produce a plot showing the stage lengths for 1 year of GTs
+    # Simple stage length plot
     #---------------------------------------------------------------------------------------------------------
     '''
-    single_year_stage_length(data=results, year=2025)
+    single_year_stage_length(data=results, year=2025) # plot stage lengths TODO: be able to select single year
     '''
     #---------------------------------------------------------------------------------------------------------
     # Extracting breakaway success rate data into a pandas dataframe, then plotting breakawy success rate
     #---------------------------------------------------------------------------------------------------------
     
-    df = results.convert_to_breakaway_dataframe()
-    breakaway_success_plot(df)
-    
+    df = results.convert_to_breakaway_dataframe() # convert the race results into dataframe ready for analysis
+    '''
+    breakaway_success_plot(df) # plot breakaway success rate
+    '''
+    #---------------------------------------------------------------------------------------------------------
+    # Data splitting then building random forest model
+    #---------------------------------------------------------------------------------------------------------
+
+    forest = RandomForest(df) # initiate class
+    forest.train_test_split(test_size=0.2, random_state=42) # split data into training and testing sets
+    forest.train_model(n_estimators=100, random_state=42) # train model
+    forest.predict() # predict
+    forest.eval() # evaluate using accuracy score metric
+
+    #random_forest_conf_matrix_plot(forest) # plot confusion matrix #TODO: prettify
+    random_forest_feature_imp_plot(forest) # plot feature importance #TODO: sort descending importance and prettify

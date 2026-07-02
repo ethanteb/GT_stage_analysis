@@ -1,6 +1,13 @@
+*.log
 .myenv
 .pytest_cache
 project_structure.txt
 .tests/__pycache__
 __pycache__
+conftest.py
 .DS_Store
+.outputs/
+
+# figures wanted on git for README images
+!.outputs/figures/2020_2025_Break_Success_1.png
+!.outputs/figures/2025_GT_Stage_Length_1.png

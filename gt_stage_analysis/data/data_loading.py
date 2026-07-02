@@ -466,10 +466,6 @@ class GTResults:
             dict = {'break_success': False}
             try:
                 break_distance = GT_stage.stage_results[0].breakaway_distance
-                '''
-                if not break_distance:
-                    break_distance =  _parse_float(, r'(\d+)\s*km')
-                ''' 
                 if break_distance:
                     dict = {'break_success': True} 
             except IndexError: #handle situations where the stage has no result list, e.g Vuelta 2025 Stage 11
